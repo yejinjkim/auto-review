@@ -1,2 +1,39 @@
-how many cases were there, can the drug treat the virus
-How many control cases were there
+how many cases were there? 
+How many control cases were there?
+Demographics of patients
+Severity of COVID-19?
+Did the patient use mechanical ventilator?
+Was there any organ failure?
+Did the patient has the stroke background?
+What was the clot formation time?
+What was the Maximum Clot Firmness?
+What is the D-dimer values?
+What is the prothrombin time?
+What was the Platelet count?
+What was the type of the Coagulopathy?
+--Was it Disseminated Intravascular Coagulation?
+--Was it Thrombotic microangiopathy?
+What was the Thrombotic manifestations?
+--Venous thromboembolic disease
+--Arterial thrombosis
+What was the treatment of thrombosis?
+--Effect of heparin?
+--Effect of Tissue plasminogen activator
+--direct oral anticoagulants (DOACs)
+-- prophylactic anticoagulation 
+What was the does of the treatment?
+What is the optimal dosing?
+What was the frequency of treatments?
+What was the result of treatment?
+
+--DOAC plasma levels before and after the treatment
+--improvement in ventilatory parameters
+-- improvement in oxygenation
+-- D-Dimer or SIC score after treatment
+- difference between treatment and control group
+
+What were the other interventions?
+What was the survival rate?
+How many patients were discharge from hospital?
+How many days they stayed at the hospital?
+How many days after the treatment patients were discharged from hospital?
