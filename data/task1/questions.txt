@@ -1,20 +1,3 @@
-
-### Date
-What was the date of the study?
-
-### Study
-What was the name of the study?
-What was the title?
-
-### Study Link
-URL for the study?
-What is the link for the publication?
-
-
-### Journal
-What was the Journal at which study was published?
-
-
 ### Study type?
 What was the type of the study?
 Was it a Meta-Analysis study?
