@@ -1,49 +1,28 @@
-study type,Was it a Meta-Analysis study?
-study type,Was it a Systematic Review study?
+study type,What was the type of the study?
+study type,"Was it a Prospective, Retrospective Studies?"
 study type,Was it a Randomized Controlled Trial?
-study type,Was it a Cohort Study?
-study type,Was it a Case-control Study?
-study type,Was it a Cross-sectional study?
-study type,Was it a Case Reports and Series study?
+study type,Was it a case control or Cohort Study?
 Therapeutic method,What therapeutic method was utilized?
+Therapeutic method,"Was the patient on antiviral, antiInflammatory , antibactrial treatment?"
 Therapeutic method,What was the treatment of thrombosis?
-Therapeutic method,What was the effect of heparin?
-Therapeutic method,What was the effect of Tissue plasminogen activator
-Therapeutic method,Were any direct oral anticoagulants (DOACs) used
-Therapeutic method,Where any prophylactic anticoagulation used
+Therapeutic method,Where any  anticoagulation used?
 Therapeutic method,What was the dose of the treatment?
-Therapeutic method,What is the optimal dosing?
-Therapeutic method,What was the frequency of treatments?
-Therapeutic method,What was the result of treatment?
 Therapeutic method,What were all the interventions?
-Therapeutic method,Was the paitent on antiviral drug? 
 sample,how many cases were there? 
 sample,How many control cases were there?
-sample,Did the patient has the stroke background?
+sample,What were the comorbidities or pre existing conditions?
 Severity of Symptoms,What was the clot formation time?
-Severity of Symptoms,What was the Maximum Clot Firmness?
-Severity of Symptoms,What was the D-dimer values?
 Severity of Symptoms,What was the prothrombin time?
 Severity of Symptoms,What was the Platelet count?
-Severity of Symptoms,What was the type of the Coagulopathy?
-Severity of Symptoms,Was it Disseminated Intravascular Coagulation?
-Severity of Symptoms,Was it Thrombotic microangiopathy?
-Severity of Symptoms,What was the Thrombotic manifestations?
-Severity of Symptoms,Was there a Venous thromboembolic disease?
-Severity of Symptoms,Was there a Arterial thrombosis?
 Severity of Symptoms,What was the severity of symptoms?
 Severity of Symptoms,Were there any organ failure?
-Severity of Symptoms,What was the Kirby index?
-Severity of Symptoms,Was the patient using mechanical ventilator?
-Severity of Symptoms,Was the patient in ICU?
+Severity of Symptoms,Was the patient admitted to intensive care unit or ICU?
 Severity of Symptoms,Was the patient admitted to intensive care unit?
 Severity of Symptoms,how severe the CT scan score was?
 Severity of Symptoms,What was the severity of lung infection?
-General Outcome,What were DOAC plasma levels before and after the treatment
 General Outcome,Were there Any improvement in ventilatory parameters
 General Outcome,were there Any improvement in oxygenation
-General Outcome,D-Dimer or SIC score after treatment
-General Outcome,difference between treatment and control group
+General Outcome,difference between treatment and control group?
 General Outcome,What was the survival rate?
 General Outcome,How many patients were discharge from hospital?
 General Outcome,How many days they stayed at the hospital?
@@ -52,7 +31,6 @@ Endpoint,Which patient types develop thrombotic event?
 Endpoint,What is considered a thrombotic implication caused by COVID-19?
 Endpoint,Which Covid-19 patients are at a higher risk of developing thrombosis risk?
 Endpoint,What drug is recommended for the patients with mild symptoms to prevent thrombotic implication?
-Endpoint,What drug is recommend for non-ICU patient at hospital?
-Endpoint,What drug or treatment strategy is recommended for ICU patient?
+Endpoint,What drug is recommend for patient at hospital?
 Endpoint,What is the best drug/treatment with patients who have a stroke background ?
 Endpoint,What is the best drug/treatment with patients who have background of coagulation?
