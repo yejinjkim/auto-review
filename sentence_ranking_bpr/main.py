@@ -13,7 +13,7 @@ if __name__ == '__main__':
         'batch_size': 10,
         'negative_sampling_size': 10,
         'debug_batch_size': 1,
-        'epochs': 100,
+        'epochs': 2,
         'lr': 0.001,
         'seed': 1,
         'early_stop_times': 5,
@@ -21,7 +21,7 @@ if __name__ == '__main__':
         'device': 0
     }
 
-    with open('../results/task1/round_2_sent.pkl', 'rb') as f:
+    with open('../results/task1/pseudo_label.pkl', 'rb') as f:
         sentences = pickle.load(f)
     
     labeled = sentences.loc[sentences['label']==1]
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     if args['debug_mode']:
         test = test[:20]
 
-    train_sent, val_sent, test_sent = map(lambda x: x.sentence.values, [train, val, test])
+    train_sent, val_sent, test_sent = map(lambda x: x.abstract.values, [train, val, test])
     train_prob, val_prob, test_prob = map(lambda x: x.prob.values, [train, val, test])
 
     # pass the probability
@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     device = torch.device('cuda:'+str(args['device']))
     batch_size = args['debug_batch_size'] if args['debug_mode'] else args['batch_size']
-    num_negative = 2 if args['debug_mode'] else args['negative_sampling_size']
+    num_negative = 1 if args['debug_mode'] else args['negative_sampling_size']
 
     base_bert_name = args['modelname1']
     sci_bert_name = args['modelname2']
@@ -50,16 +50,17 @@ if __name__ == '__main__':
         train_sent, _, train_labels, _ = train_test_split(train_sent, train_labels, train_size=100)
         val_sent, _, val_labels, _ = train_test_split(val_sent, val_labels, train_size=100)
 
-    nor_loader, sci_loader = bertrnn_process(train_sent, 
-                                             val_sent, 
-                                             test_sent, 
-                                             train_labels, 
-                                             val_labels, 
-                                             test_labels,
-                                             batch_size, 
-                                             num_negative,
-                                             base_bert_name=base_bert_name,
-                                             sci_bert_name=sci_bert_name)
+    processed = bertrnn_process(train_sent, 
+                                val_sent, 
+                                test_sent, 
+                                train_labels, 
+                                val_labels, 
+                                test_labels,
+                                batch_size, 
+                                num_negative,
+                                base_bert_name=base_bert_name,
+                                sci_bert_name=sci_bert_name)
+    nor_loader, sci_loader, nor_train_collator, nor_val_collator, sci_train_collator, sci_val_collator = processed
 
     model= BERTRNN(num_labels,
                    hidden_size=args['hidden_size'],
@@ -72,9 +73,9 @@ if __name__ == '__main__':
     best_val_loss = None
     early_stoping_counter = 0
     for epoch in range(1, args['epochs'] + 1):
-        epoch_loss = train_(model, criteria, optimizer, nor_loader[0], sci_loader[0], epoch, device)
+        epoch_loss = train_(model, criteria, optimizer, nor_loader[0], sci_loader[0], nor_train_collator, sci_train_collator, epoch, device)
 
-        val_loss = validate_(model, criteria, optimizer, nor_loader[1], sci_loader[1], epoch, device)
+        val_loss = validate_(model, criteria, optimizer, nor_loader[1], sci_loader[1], nor_val_collator, sci_val_collator, epoch, device)
 
         if epoch == 1 or val_loss < best_val_loss:
             print('- new best loss: {}'.format(val_loss))
