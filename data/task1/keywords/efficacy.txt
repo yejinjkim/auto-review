@@ -1,1 +1,0 @@
-efficacy,dosage,dose,regimen,intervene,therapeutics,pharma
