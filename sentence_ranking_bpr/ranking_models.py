@@ -83,7 +83,7 @@ class PairwiseData:
         self.num_negative = num_negative
 
     def negative_sampling(self, idx):
-        neg_candidates = (self.probs < self.probs[idx]).nonzero().squeeze()
+        neg_candidates = (self.probs < self.probs[idx]).nonzero().squeeze(1)
         num_candidates = neg_candidates.shape[0]
         negative_samples = neg_candidates[torch.randperm(num_candidates)[:min(num_candidates, self.num_negative)]]
         return negative_samples
@@ -94,7 +94,8 @@ class PairwiseData:
 
         negative_ids = torch.cat([self.negative_sampling(i) for i in sample_ids])
         positive_ids = sample_ids.unsqueeze(1).repeat(1, self.num_negative).reshape(-1)
-        return self.tensor_dataset(positive_ids), self.tensor_dataset(negative_ids)
+        # return self.tensor_dataset(positive_ids), self.tensor_dataset(negative_ids)
+        return positive_ids, negative_ids
 
 
 def build_dataloader(train_val, test, batch_size, num_negative):
@@ -108,15 +109,15 @@ def build_dataloader(train_val, test, batch_size, num_negative):
                                   collate_fn=train_collator)
 
     val_collator = PairwiseData(CallableTensorDataset(val_inputs, val_masks), val_probs, num_negative)
-    train_dataloader = DataLoader(TensorDataset(torch.arange(val_inputs.shape[0])), 
-                                  batch_size=batch_size, 
-                                  shuffle=False,
-                                  collate_fn=val_collator)
+    val_dataloader = DataLoader(TensorDataset(torch.arange(val_inputs.shape[0])), 
+                                batch_size=batch_size, 
+                                shuffle=False,
+                                collate_fn=val_collator)
 
     test_data = TensorDataset(test_inputs, test_masks, test_probs)
-    test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
+    test_dataloader = DataLoader(test_data, batch_size=2*batch_size, shuffle=False)
 
-    return train_dataloader, train_dataloader, test_dataloader
+    return train_dataloader, val_dataloader, test_dataloader, train_collator, val_collator
 
 
 def bertrnn_process(train_sent, 
@@ -143,7 +144,7 @@ def bertrnn_process(train_sent,
 
     nor_train_val = (train_nor, train_nor_att, train_label, val_nor, val_nor_att, val_labels) 
     nor_test = (test_nor, test_nor_att, test_labels)
-    nor_loader = build_dataloader(nor_train_val, nor_test, batch_size, num_negative)
+    *nor_loader, nor_train_collator, nor_val_collator = build_dataloader(nor_train_val, nor_test, batch_size, num_negative)
 
     print(f'Process sentences with SciBERT model: {sci_bert_name}')
     # tokenize, pad sequense, and get attention
@@ -154,8 +155,8 @@ def bertrnn_process(train_sent,
     
     sci_train_val = (train_sci, train_sci_att, train_label, val_sci, val_sci_att, val_labels)
     sci_test = (test_sci, test_sci_att, test_labels)
-    sci_loader = build_dataloader(sci_train_val, sci_test, batch_size, num_negative)
-    return nor_loader, sci_loader
+    *sci_loader, sci_train_collator, sci_val_collator = build_dataloader(sci_train_val, sci_test, batch_size, num_negative)
+    return nor_loader, sci_loader, nor_train_collator, nor_val_collator, sci_train_collator, sci_val_collator
 
 
 class BERTRNN(nn.Module):
@@ -195,17 +196,24 @@ class BERTRNN(nn.Module):
         pooler_output = self.dropout(torch.cat((pooler_output1, pooler_output2), 1))
         pooler_output = nn.functional.relu(self.lin1(pooler_output))
         out = self.lin2(pooler_output).sigmoid()
-        return out
+        return out.squeeze()
 
 
-def train_(model, criteria, optimizer, dataloaders1, dataloaders2, epoch, device):
+def train_(model, criteria, optimizer, dataloaders1, dataloaders2, collator1, collator2, epoch, device):
     model.train()
     epoch_loss = AverageMeter()
     pbar = tqdm(total=len(dataloaders1), desc='Training')
-    for batch_idx, (batch1, batch2) in enumerate(zip(dataloaders1, dataloaders2)):
-        pos1, pos_mask1, neg1, neg_mask1 = map(lambda x: x.to(device), chain(*batch1))
-        pos2, pos_mask2, neg2, neg_mask2 = map(lambda x: x.to(device), chain(*batch2))
-        
+    for batch_idx, (pos_idx, neg_idx) in enumerate(dataloaders1):
+        pos1 = collator1.tensor_dataset.tensors[0][pos_idx].to(device)
+        pos_mask1 = collator1.tensor_dataset.tensors[1][pos_idx].to(device)
+        neg1 = collator1.tensor_dataset.tensors[0][neg_idx].to(device)
+        neg_mask1 = collator1.tensor_dataset.tensors[1][pos_idx].to(device)
+
+        pos2 = collator2.tensor_dataset.tensors[0][pos_idx].to(device)
+        pos_mask2 = collator2.tensor_dataset.tensors[1][pos_idx].to(device)
+        neg2 = collator2.tensor_dataset.tensors[0][neg_idx].to(device)
+        neg_mask2 = collator2.tensor_dataset.tensors[1][pos_idx].to(device)
+
         optimizer.zero_grad()
         out_pos = model.forward(pos1, pos_mask1, pos2, pos_mask2)
         out_neg = model.forward(neg1, neg_mask1, neg2, neg_mask2)
@@ -213,7 +221,7 @@ def train_(model, criteria, optimizer, dataloaders1, dataloaders2, epoch, device
         loss = criteria(out_pos, out_neg)
         loss.backward()
         optimizer.step()
-    
+
         epoch_loss.update(loss.item(), n=pos1.shape[0])
         pbar.update()
 
@@ -222,14 +230,21 @@ def train_(model, criteria, optimizer, dataloaders1, dataloaders2, epoch, device
     return epoch_loss
 
 
-def validate_(model, criteria, optimizer, dataloaders1, dataloaders2, epoch, device):
+def validate_(model, criteria, optimizer, dataloaders1, dataloaders2, collator1, collator2, epoch, device):
     model.eval()
     epoch_loss = AverageMeter()
     pbar = tqdm(total=len(dataloaders1), desc='Validation')
     with torch.no_grad():
-        for batch_idx, (batch1, batch2) in enumerate(zip(dataloaders1, dataloaders2)):
-            pos1, pos_mask1, neg1, neg_mask1 = map(lambda x: x.to(device), chain(*batch1))
-            pos2, pos_mask2, neg2, neg_mask2 = map(lambda x: x.to(device), chain(*batch2))
+        for batch_idx, (pos_idx, neg_idx) in enumerate(dataloaders1):
+            pos1 = collator1.tensor_dataset.tensors[0][pos_idx].to(device)
+            pos_mask1 = collator1.tensor_dataset.tensors[1][pos_idx].to(device)
+            neg1 = collator1.tensor_dataset.tensors[0][neg_idx].to(device)
+            neg_mask1 = collator1.tensor_dataset.tensors[1][pos_idx].to(device)
+
+            pos2 = collator2.tensor_dataset.tensors[0][pos_idx].to(device)
+            pos_mask2 = collator2.tensor_dataset.tensors[1][pos_idx].to(device)
+            neg2 = collator2.tensor_dataset.tensors[0][neg_idx].to(device)
+            neg_mask2 = collator2.tensor_dataset.tensors[1][pos_idx].to(device)
             
             optimizer.zero_grad()
             out_pos = model.forward(pos1, pos_mask1, pos2, pos_mask2)
@@ -249,10 +264,10 @@ def test_(model, device, dataloaders1, dataloaders2):
     preds = []
     pbar = tqdm(total=len(dataloaders1), desc='Testing')
     for batch_idx, (batch1, batch2) in tqdm(enumerate(zip(dataloaders1, dataloaders2))):
-        data1, mask1 = map(lambda x: x.to(device), batch1)
-        data2, mask2 = map(lambda x: x.to(device), batch2)
+        data1, mask1, _ = map(lambda x: x.to(device), batch1)
+        data2, mask2, _ = map(lambda x: x.to(device), batch2)
         with torch.no_grad(): 
-            out = F.sigmoid(model(data1, mask1, data2, mask2))
+            out = model(data1, mask1, data2, mask2)
             preds.append(out)
         pbar.update()
     pbar.close()
